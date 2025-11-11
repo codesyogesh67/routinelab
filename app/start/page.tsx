@@ -46,7 +46,13 @@ export default function StartPage() {
     });
 
     const data = await res.json();
-    // data.id will be your plan id
+    // data = { id, plan }
+
+    // ✅ store in browser so the plan page can read it
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(`plan-${data.id}`, JSON.stringify(data.plan));
+    }
+
     router.push(`/plan/${data.id}`);
   }
 
@@ -57,10 +63,15 @@ export default function StartPage() {
         Answer a few questions and we&apos;ll generate a 7-day view for you.
       </p>
 
-      <form onSubmit={handleSubmit} className="space-y-5 bg-white/5 p-6 rounded-lg border">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-5 bg-white/5 p-6 rounded-lg border"
+      >
         {/* Goal */}
         <div>
-          <label className="block mb-2 font-medium">What&apos;s your main goal?</label>
+          <label className="block mb-2 font-medium">
+            What&apos;s your main goal?
+          </label>
           <select
             className="w-full border rounded-md p-2 bg-background"
             value={form.goal}
@@ -76,7 +87,9 @@ export default function StartPage() {
 
         {/* Days per week */}
         <div>
-          <label className="block mb-2 font-medium">How many days per week?</label>
+          <label className="block mb-2 font-medium">
+            How many days per week?
+          </label>
           <select
             className="w-full border rounded-md p-2 bg-background"
             value={form.daysPerWeek}
@@ -94,27 +107,35 @@ export default function StartPage() {
 
         {/* Equipment */}
         <div>
-          <label className="block mb-2 font-medium">What equipment do you have?</label>
+          <label className="block mb-2 font-medium">
+            What equipment do you have?
+          </label>
           <select
             className="w-full border rounded-md p-2 bg-background"
             value={form.equipment}
-            onChange={(e) => setForm((f) => ({ ...f, equipment: e.target.value }))}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, equipment: e.target.value }))
+            }
           >
             {equipments.map((eq) => (
-            <option key={eq.value} value={eq.value}>
-              {eq.label}
-            </option>
+              <option key={eq.value} value={eq.value}>
+                {eq.label}
+              </option>
             ))}
           </select>
         </div>
 
         {/* Time of day */}
         <div>
-          <label className="block mb-2 font-medium">When do you prefer to work out?</label>
+          <label className="block mb-2 font-medium">
+            When do you prefer to work out?
+          </label>
           <select
             className="w-full border rounded-md p-2 bg-background"
             value={form.timeOfDay}
-            onChange={(e) => setForm((f) => ({ ...f, timeOfDay: e.target.value }))}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, timeOfDay: e.target.value }))
+            }
           >
             {times.map((t) => (
               <option key={t.value} value={t.value}>
@@ -126,11 +147,15 @@ export default function StartPage() {
 
         {/* Experience */}
         <div>
-          <label className="block mb-2 font-medium">What is your experience level?</label>
+          <label className="block mb-2 font-medium">
+            What is your experience level?
+          </label>
           <select
             className="w-full border rounded-md p-2 bg-background"
             value={form.experience}
-            onChange={(e) => setForm((f) => ({ ...f, experience: e.target.value }))}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, experience: e.target.value }))
+            }
           >
             <option value="beginner">Beginner</option>
             <option value="intermediate">Intermediate</option>
@@ -144,7 +169,9 @@ export default function StartPage() {
             id="nutrition"
             type="checkbox"
             checked={form.wantNutrition}
-            onChange={(e) => setForm((f) => ({ ...f, wantNutrition: e.target.checked }))}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, wantNutrition: e.target.checked }))
+            }
           />
           <label htmlFor="nutrition" className="text-sm">
             I also want a simple nutrition/log section
