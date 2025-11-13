@@ -6,19 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-
-type WorkoutDay = {
-  day: string;
-  focus: string;
-  exercises: string[];
-};
-
-type Plan = {
-  goal: string;
-  daysPerWeek: number;
-  equipment: string;
-  workouts: WorkoutDay[];
-};
+import type { Plan } from "@/lib/planBuilder";
 
 export default function PlanPage(props: { params: Promise<{ id: string }> }) {
   // unwrap Next's params (in this Next version, params is a Promise)
