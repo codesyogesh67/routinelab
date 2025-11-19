@@ -53,6 +53,9 @@ export default function HomePage() {
             <Button size="lg" variant="outline" asChild>
               <a href="#how-it-works">See how it works</a>
             </Button>
+            <Button size="lg" variant="ghost" asChild>
+              <a href="/demo">View demo week</a>
+            </Button>
           </div>
 
           <p className="text-xs text-muted-foreground">
