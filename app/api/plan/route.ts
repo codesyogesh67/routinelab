@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildPlanFromAnswers, type Answers } from "@/lib/planBuilder";
+import prisma from "@/lib/db";
 
-function createId() {
-  return Math.random().toString(36).slice(2, 8);
+function addDays(date: Date, days: number) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
 }
 
 export async function POST(req: NextRequest) {
   const body = (await req.json()) as Partial<Answers>;
 
-  // minimal safety / defaults
   const answers: Answers = {
     goal: (body.goal as Answers["goal"]) ?? "muscle_gain",
     daysPerWeek: body.daysPerWeek ?? 4,
@@ -18,8 +20,19 @@ export async function POST(req: NextRequest) {
     wantNutrition: body.wantNutrition ?? false,
   };
 
-  const id = createId();
   const plan = buildPlanFromAnswers(answers);
 
-  return NextResponse.json({ id, plan });
+  // Save to DB
+  const record = await prisma.plan.create({
+    data: {
+      data: plan,
+      expiresAt: addDays(new Date(), 7),
+    },
+  });
+
+  return NextResponse.json({
+    id: record.id,
+    plan,
+    expiresAt: record.expiresAt,
+  });
 }
