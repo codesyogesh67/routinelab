@@ -1,10 +1,12 @@
 // lib/planStore.ts
-const plans = new Map<string, any>();
+import { type Plan } from "./planBuilder";
 
-export function savePlan(id: string, data: any) {
-  plans.set(id, data);
+const store = new Map<string, Plan>();
+
+export function savePlan(id: string, plan: Plan) {
+  store.set(id, plan);
 }
 
-export function getPlan(id: string) {
-  return plans.get(id);
+export function getPlan(id: string): Plan | null {
+  return store.get(id) ?? null;
 }

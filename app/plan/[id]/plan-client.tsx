@@ -1,12 +1,12 @@
-// app/plan/[id]/plan-client.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { Plan } from "@/lib/planBuilder";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
+
+import { usePlanState } from "./use-plan-state";
+import { PlanHero } from "./plan-hero";
+import { ActiveDayCard } from "./active-day-card";
+import { FooterActions } from "./footer-actions";
 import { Button } from "@/components/ui/button";
 
 type PlanClientProps = {
@@ -15,171 +15,109 @@ type PlanClientProps = {
 };
 
 export function PlanClient({ id, plan }: PlanClientProps) {
-  const [progress, setProgress] = useState<Record<string, boolean>>({});
-  const [notes, setNotes] = useState<Record<string, string>>({});
+  const {
+    progress,
+    notes,
+    toggleExercise,
+    changeNote,
+    resetAll,
+  } = usePlanState(id);
 
-  // Load progress + notes from localStorage
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [showAll, setShowAll] = useState(false);
 
-    const progRaw = window.localStorage.getItem(`progress-${id}`);
-    if (progRaw && progRaw !== "undefined" && progRaw !== "null") {
-      try {
-        setProgress(JSON.parse(progRaw));
-      } catch (e) {
-        console.error("Invalid progress JSON", e);
-      }
-    }
+  const uniqueFocuses = useMemo(() => {
+    const focuses = new Set<string>();
+    for (const w of plan.workouts) focuses.add(w.focus);
+    return Array.from(focuses);
+  }, [plan]);
 
-    const notesRaw = window.localStorage.getItem(`notes-${id}`);
-    if (notesRaw && notesRaw !== "undefined" && notesRaw !== "null") {
-      try {
-        setNotes(JSON.parse(notesRaw));
-      } catch (e) {
-        console.error("Invalid notes JSON", e);
-      }
-    }
-  }, [id]);
+  const hasWorkouts = plan.workouts.length > 0;
 
-  // Derived counts
-  const { totalExercises, completedExercises, percent } = useMemo(() => {
-    let total = 0;
-    let done = 0;
-    for (const w of plan.workouts) {
-      total += w.exercises.length;
-      w.exercises.forEach((_, i) => {
-        if (progress[`${w.day}-${i}`]) done += 1;
-      });
-    }
-    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-    return { totalExercises: total, completedExercises: done, percent: pct };
-  }, [plan, progress]);
+  const goNext = () => {
+    if (!hasWorkouts) return;
+    setActiveIndex((prev) => (prev + 1) % plan.workouts.length);
+  };
 
-  function toggleExercise(day: string, idx: number, checked: boolean) {
-    const key = `${day}-${idx}`;
-    const next = { ...progress, [key]: checked };
-    setProgress(next);
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(`progress-${id}`, JSON.stringify(next));
-    }
-  }
+  const goPrev = () => {
+    if (!hasWorkouts) return;
+    setActiveIndex((prev) =>
+      prev === 0 ? plan.workouts.length - 1 : prev - 1
+    );
+  };
 
-  function changeNote(day: string, value: string) {
-    const next = { ...notes, [day]: value };
-    setNotes(next);
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(`notes-${id}`, JSON.stringify(next));
-    }
-  }
-
-  function resetAll() {
-    setProgress({});
-    setNotes({});
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem(`progress-${id}`);
-      window.localStorage.removeItem(`notes-${id}`);
-    }
-  }
+  const activeWorkout = hasWorkouts ? plan.workouts[activeIndex] : null;
 
   return (
-    <div className="max-w-3xl mx-auto py-10 space-y-6">
-      {/* header + progress */}
-      <div className="space-y-3">
-        <h1 className="text-3xl font-bold tracking-tight">
-          Your routine — routinelab
-        </h1>
-        <p className="text-muted-foreground">
-          Goal: <span className="font-medium">{plan.goal}</span> ·{" "}
-          {plan.daysPerWeek} days/week · {plan.equipment}
-        </p>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">
-              Progress: {completedExercises} / {totalExercises} exercises
-            </span>
-            <span className="text-xs text-muted-foreground">{percent}%</span>
-          </div>
-          <Progress value={percent} className="h-2" />
+    <div className="max-w-5xl mx-auto space-y-2 py-10 px-4 md:px-0">
+      <PlanHero plan={plan} uniqueFocuses={uniqueFocuses} />
+
+      {/* SHOW ALL / HIDE ALL TOGGLE (outside carousel) */}
+      {hasWorkouts && !showAll && (
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-7 px-3 text-[11px] text-sky-300 hover:text-sky-100"
+            onClick={() => setShowAll(true)}
+          >
+            Show all days
+          </Button>
         </div>
-      </div>
+      )}
 
-      {/* workouts */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {plan.workouts.map((w) => {
-          const dayDone =
-            w.exercises.length > 0 &&
-            w.exercises.every((_, i) => progress[`${w.day}-${i}`]);
+      {hasWorkouts && showAll && (
+        <div className="flex justify-end">
+          {" "}
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-7 px-3 text-[11px] text-sky-300 hover:text-sky-100"
+            onClick={() => setShowAll(false)}
+          >
+            Hide all days
+          </Button>
+        </div>
+      )}
 
-          return (
-            <Card
-              key={w.day}
-              className={dayDone ? "border-green-400/70" : undefined}
-            >
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center justify-between gap-2">
-                  <span>{w.day}</span>
-                  {dayDone && (
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                      Done
-                    </span>
-                  )}
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">{w.focus}</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  {w.exercises.map((ex, i) => {
-                    const key = `${w.day}-${i}`;
-                    const checked = !!progress[key];
-                    return (
-                      <label
-                        key={key}
-                        className="flex items-start gap-2 rounded-md bg-muted/40 px-2 py-1"
-                      >
-                        <Checkbox
-                          checked={checked}
-                          onCheckedChange={(val) =>
-                            toggleExercise(w.day, i, Boolean(val))
-                          }
-                        />
-                        <span
-                          className={
-                            checked ? "line-through text-muted-foreground" : ""
-                          }
-                        >
-                          {ex}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
+      {/* SINGLE-DAY CAROUSEL */}
+      {activeWorkout && !showAll && (
+        <ActiveDayCard
+          id={id}
+          plan={plan}
+          workout={activeWorkout}
+          workoutIndex={activeIndex}
+          progress={progress}
+          notes={notes}
+          toggleExercise={toggleExercise}
+          changeNote={changeNote}
+          showNav={true}
+          goNext={goNext}
+          goPrev={goPrev}
+        />
+      )}
 
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">
-                    Notes / weights / energy
-                  </p>
-                  <Textarea
-                    value={notes[w.day] ?? ""}
-                    onChange={(e) => changeNote(w.day, e.target.value)}
-                    placeholder="How did this session go?"
-                    className="text-sm"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+      {/* SHOW ALL: render all the same fancy cards, but without nav */}
+      {showAll && (
+        <div className="space-y-5">
+          {plan.workouts.map((w, idx) => (
+            <ActiveDayCard
+              key={w.id ?? `w-${idx}`}
+              id={id}
+              plan={plan}
+              workout={w}
+              workoutIndex={idx}
+              progress={progress}
+              notes={notes}
+              toggleExercise={toggleExercise}
+              changeNote={changeNote}
+              showNav={false}
+            />
+          ))}
+        </div>
+      )}
 
-      {/* footer */}
-      <div className="flex gap-3">
-        <Button asChild variant="outline">
-          <a href="/start">Generate another plan</a>
-        </Button>
-        <Button variant="ghost" onClick={resetAll}>
-          Reset progress
-        </Button>
-      </div>
+      <FooterActions resetAll={resetAll} />
     </div>
   );
 }

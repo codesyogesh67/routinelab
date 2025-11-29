@@ -20,11 +20,23 @@ export type WorkoutDay = {
   exercises: string[];
 };
 
+export type Workout = {
+  id: string; // "monday-upper-body" or "day-1" or random id
+  label: string; // editable name shown to user
+  focus: string;
+  exercises: string[];
+};
+
 export type Plan = {
-  goal: Goal;
+  goal: string;
   daysPerWeek: number;
-  equipment: Equipment;
-  workouts: WorkoutDay[];
+  equipment: string;
+  workouts: {
+    id: string; // stable workout id, used for routing + storage
+    day: string; // label shown in UI, e.g. "Day 1", "Monday"
+    focus: string;
+    exercises: string[];
+  }[];
 };
 
 // -------- Exercise templates --------
